@@ -1,6 +1,6 @@
 #version 120
 
-const int noiseTextureResolution = 512;
+const int noiseTextureResolution = 1024;
 
 
 varying vec3 lightVector;
