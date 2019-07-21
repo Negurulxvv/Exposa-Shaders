@@ -3,6 +3,7 @@
 const int noiseTextureResolution = 1024;
 
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
+//testing for my discord server
 
 
 varying vec3 lightVector;
