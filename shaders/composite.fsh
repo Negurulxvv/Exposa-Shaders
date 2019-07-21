@@ -2,6 +2,8 @@
 
 const int noiseTextureResolution = 1024;
 
+//I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
+
 
 varying vec3 lightVector;
 varying vec3 colSky;
