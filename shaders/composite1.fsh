@@ -112,29 +112,35 @@ mat2 getRotationMatrix(in vec2 coord) {
     );
 }
 
-vec3 getShadowColor(in vec2 coord) {
-    vec3 shadowCoord = getShadowSpacePosition(coord);
+bool isTerrain = depth<1.0;
+
+if (isTerrain) {
+    vec3 getShadowColor(in vec2 coord) {
+
+        vec3 shadowCoord = getShadowSpacePosition(coord);
     
-    mat2 rotationMatrix = getRotationMatrix(coord);
-    vec3 shadowColor = vec3(0);
-    for(int y = -1; y < 2; y++) {
-        for(int x = -1; x <2; x++) {
-            vec2 offset = vec2(x, y) / shadowMapResolution;
-            offset = rotationMatrix * offset;
-            float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
+        mat2 rotationMatrix = getRotationMatrix(coord);
+        vec3 shadowColor = vec3(0);
+        for(int y = -1; y < 2; y++) {
+            for(int x = -1; x <2; x++) {
+                vec2 offset = vec2(x, y) / shadowMapResolution;
+                offset = rotationMatrix * offset;
+                float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
+                float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
             
-            vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
-            #ifdef ColoredLighting
-            shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
-            #else
-            shadowColor += mix(colorSample, vec3(1.0), visibility);
-            #endif
+                vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
+                #ifdef ColoredLighting
+                shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
+                #else
+                shadowColor += mix(colorSample, vec3(1.0), visibility);
+                #endif
         }
     }
     
     return shadowColor * vec3(0.044);
     
+}
+
 }
 
 
