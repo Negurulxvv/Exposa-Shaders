@@ -8,6 +8,7 @@
 #define ShadowColor
 
 //#define Shadows //Enable shadows to make this a lil more realistic at a medium peformance cost.
+#define ColoredLighting //Makes the lighting look a lil different but It's glitched with the sky.
 
 
 const float shadowDistance = 256.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
@@ -121,15 +122,19 @@ vec3 getShadowColor(in vec2 coord) {
             vec2 offset = vec2(x, y) / shadowMapResolution;
             offset = rotationMatrix * offset;
             float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.005);
+            float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
             
             vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
+            #ifdef ColoredLighting
+            shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
+            #else
             shadowColor += mix(colorSample, vec3(1.0), visibility);
+            #endif
         }
     }
     
     #ifdef BetterLighting
-    return shadowColor * vec3(0.104);
+    return shadowColor * vec3(0.124);
     #else
     return shadowColor * vec3(0.044);
     #endif  
@@ -140,9 +145,9 @@ vec3 getShadowColor(in vec2 coord) {
 vec3 calculateLitSurface(in vec3 color) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
    #ifdef BetterLighting
-   float ambientLighting = 0.25;
+   float ambientLighting = 0.45;
    #else
-    float ambientLighting = 0.55; 
+    float ambientLighting = 0.75; 
     #endif
     return color * (sunlightAmount + ambientLighting);
 }
