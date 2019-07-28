@@ -11,7 +11,7 @@
 #define ColoredLighting //Makes the lighting look a lil different but It's glitched with the sky.
 
 
-const float shadowDistance = 256.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
+const float shadowDistance = 128.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
 const float shadowMapBias = 1.0-25.6/shadowDistance;
 const float stp = 1.0;			//size of one step for raytracing algorithm
 const float ref = 0.05;			//refinement multiplier
@@ -133,22 +133,15 @@ vec3 getShadowColor(in vec2 coord) {
         }
     }
     
-    #ifdef BetterLighting
-    return shadowColor * vec3(0.124);
-    #else
     return shadowColor * vec3(0.044);
-    #endif  
     
 }
 
 
 vec3 calculateLitSurface(in vec3 color) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
-   #ifdef BetterLighting
-   float ambientLighting = 0.45;
-   #else
     float ambientLighting = 0.75; 
-    #endif
+
     return color * (sunlightAmount + ambientLighting);
 }
 
