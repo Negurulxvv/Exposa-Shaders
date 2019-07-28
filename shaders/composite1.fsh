@@ -112,7 +112,7 @@ mat2 getRotationMatrix(in vec2 coord) {
     );
 }
 
-bool isTerrain = depth<1.0;
+bool isTerrain = getDepth<1.0;
 
 if (isTerrain) {
     vec3 getShadowColor(in vec2 coord) {
