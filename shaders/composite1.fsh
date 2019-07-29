@@ -135,33 +135,19 @@ vec3 getShadowColor(in vec2 coord) {
     vec3 shadowCoord = getShadowSpacePosition(coord);
     
     mat2 rotationMatrix = getRotationMatrix(coord);
-    vec3 shadowColor = vec3(0);
+    vec3 shadowColor = vec3(0.0);
     for(int y = -1; y < 2; y++) {
         for(int x = -1; x <2; x++) {
             vec2 offset = vec2(x, y) / shadowMapResolution;
             offset = rotationMatrix * offset;
             float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
             float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
-            
+            vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
+            vec3 dayColor = vec3(1.0);
+            vec3 nightColor = vec3(0.0);
             vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
             #ifdef ColoredLighting
-
-            if (worldTime > 22999) {
-                shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
-            }
-
-            if (worldTime > 0) {
-                shadowColor += mix(colorSample, vec3(1.0), visibility);
-            }
-
-            if (worldTime > 11999) {
-                shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
-            }
-
-            if (worldTime > 12999) {
-                shadowColor += mix(colorSample, vec3(0.0), visibility);
-            }
-
+            shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
             #else
             shadowColor += mix(colorSample, vec3(1.0), visibility);
             #endif
