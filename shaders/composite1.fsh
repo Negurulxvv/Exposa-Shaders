@@ -8,7 +8,7 @@
 #define ShadowColor
 
 //#define Shadows //Enable shadows to make this a lil more realistic at a medium peformance cost.
-#define ColoredLighting //Makes the lighting look a lil different but It's glitched with the sky.
+#define ColoredLighting //Makes the lighting look better but you NEED to enable shadows to make it work.
 
 
 const float shadowDistance = 128.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
@@ -66,11 +66,26 @@ varying vec4 texcoord;
 
 
 
+
 /* DRAWBUFFERS:012 */
 
+//Worldtime
+float timefract = worldTime;
 
+//Get the time of the day
+float TimeSunrise  = ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0) + (1.0 - (clamp(timefract, 0.0, 4000.0)/4000.0));
+float TimeNoon     = ((clamp(timefract, 0.0, 4000.0)) / 4000.0) - ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0);
+float TimeSunset   = ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0) - ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0);
+float TimeMidnight = ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0);
+vec2 wind[4] = vec2[4](vec2(abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5))+vec2(0.5),
+					vec2(-abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5)),
+					vec2(-abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)),
+					vec2(abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)));
+
+//Depth
 float getDepth = 1.1;
 
+//Get position of the camera in live
 vec4 getCameraSpacePosition(in vec2 coord) {
     float depth = getDepth;
     vec4 positionNdcSpace = vec4(coord.s * 2.0 - 1.0, coord.t * 2.0 - 1.0, 2.0 * depth - 1.0, 1.0);
@@ -79,6 +94,7 @@ vec4 getCameraSpacePosition(in vec2 coord) {
     return positionCameraSpace / positionCameraSpace.w;
 }
 
+//Get position of the world in live
 vec4 getWorldSpacePosition(in vec2 coord) {
     vec4 positionCameraSpace = getCameraSpacePosition(coord);
     vec4 positionWorldSpace = gbufferModelViewInverse * positionCameraSpace;
@@ -87,6 +103,7 @@ vec4 getWorldSpacePosition(in vec2 coord) {
     return positionWorldSpace;
 }
 
+//What gets the shadow position
 vec3 getShadowSpacePosition(in vec2 coord) {
     vec4 positionWorldSpace = getWorldSpacePosition(coord);
 
@@ -98,6 +115,7 @@ vec3 getShadowSpacePosition(in vec2 coord) {
     return positionShadowSpace.xyz * 0.5 + 0.5;
 }
 
+//Rotation for the shadows
 mat2 getRotationMatrix(in vec2 coord) {
     float rotationAmount = texture2D(
         noisetex,
@@ -112,7 +130,7 @@ mat2 getRotationMatrix(in vec2 coord) {
     );
 }
 
-
+//Lighting and shadow code
 vec3 getShadowColor(in vec2 coord) {
     vec3 shadowCoord = getShadowSpacePosition(coord);
     
@@ -127,7 +145,23 @@ vec3 getShadowColor(in vec2 coord) {
             
             vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
             #ifdef ColoredLighting
-            shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
+
+            if (worldTime > 22999) {
+                shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
+            }
+
+            if (worldTime > 0) {
+                shadowColor += mix(colorSample, vec3(1.0), visibility);
+            }
+
+            if (worldTime > 11999) {
+                shadowColor += mix(colorSample, vec3(1.0, 0.5, 0.4), visibility);
+            }
+
+            if (worldTime > 12999) {
+                shadowColor += mix(colorSample, vec3(0.0), visibility);
+            }
+
             #else
             shadowColor += mix(colorSample, vec3(1.0), visibility);
             #endif
