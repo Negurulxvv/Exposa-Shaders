@@ -2,6 +2,7 @@
 
 const int noiseTextureResolution = 1024;
 
+
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
 //testing for my discord server
 
@@ -40,11 +41,26 @@ uniform vec2 texelSize;
 */
 uniform float far;
 
+
 uniform vec3 sunPosition;
 
 uniform float rainStrength;
 
+uniform int worldTime;
+
 float getDepth = 1.1;
+
+float timefract = worldTime;
+
+float TimeSunrise  = ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0) + (1.0 - (clamp(timefract, 0.0, 4000.0)/4000.0));
+float TimeNoon     = ((clamp(timefract, 0.0, 4000.0)) / 4000.0) - ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0);
+float TimeSunset   = ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0) - ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0);
+float TimeMidnight = ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0);
+vec2 wind[4] = vec2[4](vec2(abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5))+vec2(0.5),
+					vec2(-abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5)),
+					vec2(-abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)),
+					vec2(abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)));
+
 
 
 
@@ -81,7 +97,8 @@ void main() {
 
     if (!isTerrain) sceneCol     = pow(sceneCol, vec3(2.2));    //gamma correction on sky color
     
-    clouds_2D(worldPos, cameraPosition, lightVector, sunlight*1.5, colSky, isTerrain, sceneCol);
+    float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
+    clouds_2D(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, sceneCol);
 
     /*DRAWBUFFERS:0*/
     gl_FragData[0] = vec4(sceneCol, 1.0);

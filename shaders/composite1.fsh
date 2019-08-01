@@ -161,7 +161,11 @@ vec3 getShadowColor(in vec2 coord) {
 
 vec3 calculateLitSurface(in vec3 color) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
-    float ambientLighting = 0.75; 
+    #ifdef ColoredLighting
+    float ambientLighting = (0.95*TimeSunrise + 0.75*TimeNoon + 0.95*TimeSunset + 0.15*TimeMidnight); 
+    #else
+    float ambientLighting = 0.75;
+    #endif
 
     return color * (sunlightAmount + ambientLighting);
 }
