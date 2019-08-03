@@ -15,7 +15,7 @@ IMPORTANT: Placing Slashes in front of lines like '#define FILTER_LEVEL 15.0' wi
 	#define MIN_LIGHTAMOUNT 1.0		//affect the minecraft lightmap (not torches)
 	#define MINELIGHTMAP_EXP 2.0		//affect the minecraft lightmap (not torches)
 	#define MIX_TEX	0.6		
-	vec4 watercolor = vec4(0.0,0.2025,0.4,0.825); 	//water color and opacity (r,g,b,opacity)
+	vec4 watercolor = vec4(0.0,0.2025,0.4,0.625); 	//water color and opacity (r,g,b,opacity)
 
 //////////////////////////////END OF ADJUSTABLE VARIABLES
 //////////////////////////////END OF ADJUSTABLE VARIABLES

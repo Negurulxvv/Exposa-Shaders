@@ -154,7 +154,7 @@ vec3 getShadowColor(in vec2 coord) {
         }
     }
     
-    return shadowColor * vec3(0.044);
+    return shadowColor * vec3(0.084);
     
 }
 
