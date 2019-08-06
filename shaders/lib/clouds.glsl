@@ -1,10 +1,12 @@
+#define CloudStyle 0 //[0 1]
+
 uniform sampler2D noisetex;
 
 //smoothstep macro because the order of inputs is dumb on glsl
 #define sstep(x, low, high) smoothstep(low, high, x)
 
-const float altitude = 2050.0;      //cloud altitude relative to the camera
-const float thickness = 850.0;      //important for proper lighting later on
+#define altitude 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0]
+#define thickness 1050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0]
 
 
 //functions for 2d and 3d noise
@@ -13,13 +15,28 @@ float noise2D(in vec2 coord, in float size) {
     coord      /= noiseTextureResolution;
     return texture2D(noisetex, coord).x*2.0-1.0;
 }
+
+float fake3D(in vec2 coord, in float size) {
+    coord *= size;
+    vec3 i          = floor(vec3(coord, 0.0));
+    vec3 f          = fract(vec3(coord, 0.0));
+
+    vec2 p1         = (i.xy+i.z*vec2(20.0)+f.xy);
+    vec2 p2         = (i.xy+(i.z+1.f)*vec2(20.0))+f.xy;
+    vec2 c1         = (p1+0.5)/noiseTextureResolution;
+    vec2 c2         = (p2+0.5)/noiseTextureResolution;
+    float r1        = texture2D(noisetex, c1).r;
+    float r2        = texture2D(noisetex, c2).r;
+    return mix(r1, r2, f.z)*2.0-1.0;
+
+}
 float noise3D(in vec3 pos, in float size) {
     pos            *= size;
     vec3 i          = floor(pos);
     vec3 f          = fract(pos);
 
-    vec2 p1         = (i.xy+i.z*vec2(17.0)+f.xy);
-    vec2 p2         = (i.xy+(i.z+1.f)*vec2(17.0))+f.xy;
+    vec2 p1         = (i.xy+i.z*vec2(20.0)+f.xy);
+    vec2 p2         = (i.xy+(i.z+1.f)*vec2(20.0))+f.xy;
     vec2 c1         = (p1+0.5)/noiseTextureResolution;
     vec2 c2         = (p2+0.5)/noiseTextureResolution;
     float r1        = texture2D(noisetex, c1).r;
@@ -33,8 +50,8 @@ float shapedclouds(in vec3 pos) {
     vec3 wind       = tick*vec3(1.0, 0.2, 0.0);     //make wind in one direction
 
     //fades for the cloud shape to be contained in it's volume
-    float lowerFade     = sstep(pos.y, altitude-thickness, altitude-2);
-    float higherFade    = 1.0-sstep(pos.y, altitude+2, altitude+thickness * 0.2);
+    float lowerFade     = sstep(pos.y, altitude-thickness, altitude-1);
+    float higherFade    = 1.0-sstep(pos.y, altitude+1, altitude+thickness * 0.2);
 
     vec2 coord      = pos.xz;
 
@@ -42,10 +59,19 @@ float shapedclouds(in vec3 pos) {
     vec2 noiseCoord = pos.xz + noise2D(pos.xz+wind.xz, 10.0*size)*20.0;
 
     //sample noise in an fbm-like fashion for the cloud shape
+    #if CloudStyle == 0
     float shape     = noise2D(noiseCoord+wind.xz, 0.5*size);
         shape      += noise2D(noiseCoord+wind.xz, 2.0*size)*0.25;
         shape      += noise2D(coord+wind.xz, 4.0*size)*0.125;
         shape      += noise2D(coord+wind.xz, 8.0*size)*0.0625;
+    #endif
+
+    #if CloudStyle == 1
+    float shape     = noise3D(pos+wind, 0.5*size);
+        shape      += noise3D(pos+wind, 2.0*size)*0.25;
+        shape      += noise3D(pos+wind, 4.0*size)*0.025;
+        shape      += noise3D(pos+wind, 8.0*size)*0.0025;
+    #endif
 
         shape      -= 0.0;  //use this for manual coverage adjustment
 
@@ -56,7 +82,7 @@ float shapedclouds(in vec3 pos) {
 }
 
 float cloud_scatter(in vec3 pos, in vec3 lightVec, const int steps) {
-    float density   = 0.03;
+    float density   = 0.01;
 
     //get direction for raymarched lighting
     vec3 direction  = lightVec;
