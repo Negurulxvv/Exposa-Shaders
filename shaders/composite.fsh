@@ -2,6 +2,8 @@
 
 const int noiseTextureResolution = 1024;
 
+#define CloudsType 1 //[0 1 2] //0 is no clouds (smoothest), 1 is 2D clouds (smooth), 2 is fake 3D clouds (less smooth)
+
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
 //testing for my discord server
 
@@ -84,6 +86,8 @@ vec4 getWorldSpacePositionFromCoord(in vec2 coord) {
 
 void main() {
 
+     float height = 0.0;
+
     vec3 sceneCol   = texture2D(colortex0, texcoord.st).rgb;
 
     getDepth = texture2D(depthtex1, texcoord.st).r;
@@ -98,6 +102,18 @@ void main() {
     
     float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
 
+#if CloudsType == 0
+
+#endif
+
+#if CloudsType == 1
+    clouds_2D(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
+#endif
+
+#if CloudsType == 2
+    pasted2DClouds(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
+
+#endif
 
     /*DRAWBUFFERS:0*/
     gl_FragData[0] = vec4(sceneCol, 1.0);

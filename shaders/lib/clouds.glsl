@@ -6,7 +6,7 @@ uniform sampler2D noisetex;
 #define sstep(x, low, high) smoothstep(low, high, x)
 
 #define altitude 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0]
-#define thickness 1050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0]
+#define thickness 1050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0 8050.0]
 
 
 //functions for 2d and 3d noise
@@ -103,11 +103,11 @@ float cloud_scatter(in vec3 pos, in vec3 lightVec, const int steps) {
 }
 
 //worldPos is without camera offset
-void clouds_2D(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, inout vec3 sceneColor) {
+void clouds_2D(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
     float cloud     = 0.0;
     float scatter   = 0.0;
     bool visibility = false;
-    float height    = altitude;
+    height    = altitude;
 
     vec3 worldVec   = normalize(worldPos-cameraPos.xyz);
 
@@ -138,4 +138,61 @@ void clouds_2D(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 su
 
     //mix clouds with scene color
     sceneColor      = mix(sceneColor, color, cloud);
+}
+
+void clouds2D2(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
+    float cloud     = 0.0;
+    float scatter   = 0.0;
+    bool visibility = false;
+
+    vec3 worldVec   = normalize(worldPos-cameraPos.xyz);
+
+    //check if clouds are potentially visible
+    if (isTerrain) {
+        visibility = (worldPos.y>=height && cameraPos.y<=height) || 
+        (worldPos.y<=height && cameraPos.y>=height);
+    } else if (!isTerrain) {
+        visibility = (worldPos.y>=cameraPos.y && cameraPos.y<=height) || 
+        (worldPos.y<=cameraPos.y && cameraPos.y>=height);
+    }
+
+    if (visibility) {
+        vec3 cloud_plane    = worldVec*((height-cameraPos.y)/worldVec.y);
+        vec3 rayPosition    = cameraPos.xyz+cloud_plane;
+
+        //sample cloud shape
+        float oD            = shapedclouds(rayPosition);
+
+        //sample lighting only when there are clouds present on that pixel
+        if (oD>0.0) scatter = cloud_scatter(rayPosition, lightVec, 3);
+
+        cloud              += oD;
+    }
+
+    vec3 color      = mix(skylight, sunlight, scatter);
+    cloud           = clamp(cloud, 0.0, 0.1);
+
+    //mix clouds with scene color
+    sceneColor      = mix(sceneColor, color, cloud);
+}
+
+void pasted2DClouds(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
+    height = altitude;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 10.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 50.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 100.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 150.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 200.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 250.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 350.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+
+
 }

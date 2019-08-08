@@ -2,8 +2,6 @@
 
 const int noiseTextureResolution = 1024;
 
-#define Clouds
-
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
 //testing for my discord server
 
@@ -86,6 +84,8 @@ vec4 getWorldSpacePositionFromCoord(in vec2 coord) {
 
 void main() {
 
+     float height = 0.0;
+
     vec3 sceneCol   = texture2D(colortex0, texcoord.st).rgb;
 
     getDepth = texture2D(depthtex1, texcoord.st).r;
@@ -99,10 +99,6 @@ void main() {
     if (!isTerrain) sceneCol     = pow(sceneCol, vec3(2.2));    //gamma correction on sky color
     
     float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
-
-#ifdef Clouds
-
-#endif
 
     /*DRAWBUFFERS:0*/
     gl_FragData[0] = vec4(sceneCol, 1.0);
