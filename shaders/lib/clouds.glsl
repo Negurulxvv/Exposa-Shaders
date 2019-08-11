@@ -5,12 +5,9 @@ uniform sampler2D noisetex;
 //smoothstep macro because the order of inputs is dumb on glsl
 #define sstep(x, low, high) smoothstep(low, high, x)
 
-#define altitude 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0]
-#define thickness 1050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0 8050.0]
-
 
 //functions for 2d and 3d noise
-float noise2D(in vec2 coord, in float size) {
+float Nnoise2D(in vec2 coord, in float size) {
     coord      *= size;
     coord      /= noiseTextureResolution;
     return texture2D(noisetex, coord).x*2.0-1.0;
@@ -30,7 +27,7 @@ float fake3D(in vec2 coord, in float size) {
     return mix(r1, r2, f.z)*2.0-1.0;
 
 }
-float noise3D(in vec3 pos, in float size) {
+float Nnoise3D(in vec3 pos, in float size) {
     pos            *= size;
     vec3 i          = floor(pos);
     vec3 f          = fract(pos);
@@ -56,21 +53,21 @@ float shapedclouds(in vec3 pos) {
     vec2 coord      = pos.xz;
 
     //makes the noise more interesting if you add noise to the position
-    vec2 noiseCoord = pos.xz + noise2D(pos.xz+wind.xz, 10.0*size)*20.0;
+    vec2 noiseCoord = pos.xz + Nnoise2D(pos.xz+wind.xz, 10.0*size)*20.0;
 
     //sample noise in an fbm-like fashion for the cloud shape
     #if CloudStyle == 0
-    float shape     = noise2D(noiseCoord+wind.xz, 0.5*size);
-        shape      += noise2D(noiseCoord+wind.xz, 2.0*size)*0.25;
-        shape      += noise2D(coord+wind.xz, 4.0*size)*0.125;
-        shape      += noise2D(coord+wind.xz, 8.0*size)*0.0625;
+    float shape     = Nnoise2D(noiseCoord+wind.xz, 0.5*size);
+        shape      += Nnoise2D(noiseCoord+wind.xz, 2.0*size)*0.25;
+        shape      += Nnoise2D(coord+wind.xz, 4.0*size)*0.125;
+        shape      += Nnoise2D(coord+wind.xz, 8.0*size)*0.0625;
     #endif
 
     #if CloudStyle == 1
-    float shape     = noise3D(pos+wind, 0.5*size);
-        shape      += noise3D(pos+wind, 2.0*size)*0.25;
-        shape      += noise3D(pos+wind, 4.0*size)*0.025;
-        shape      += noise3D(pos+wind, 8.0*size)*0.0025;
+    float shape     = Nnoise3D(pos+wind, 0.5*size);
+        shape      += Nnoise3D(pos+wind, 2.0*size)*0.25;
+        shape      += Nnoise3D(pos+wind, 4.0*size)*0.025;
+        shape      += Nnoise3D(pos+wind, 8.0*size)*0.0025;
     #endif
 
         shape      -= 0.0;  //use this for manual coverage adjustment
@@ -81,7 +78,7 @@ float shapedclouds(in vec3 pos) {
     return max(shape, 0.0);     //because negative density values are not allowed
 }
 
-float cloud_scatter(in vec3 pos, in vec3 lightVec, const int steps) {
+float cloudScatter(in vec3 pos, in vec3 lightVec, const int steps) {
     float density   = 0.01;
 
     //get direction for raymarched lighting
@@ -128,7 +125,7 @@ void clouds_2D(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 su
         float oD            = shapedclouds(rayPosition);
 
         //sample lighting only when there are clouds present on that pixel
-        if (oD>0.0) scatter = cloud_scatter(rayPosition, lightVec, 3);
+        if (oD>0.0) scatter = cloudScatter(rayPosition, lightVec, 3);
 
         cloud              += oD;
     }
@@ -164,7 +161,7 @@ void clouds2D2(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 su
         float oD            = shapedclouds(rayPosition);
 
         //sample lighting only when there are clouds present on that pixel
-        if (oD>0.0) scatter = cloud_scatter(rayPosition, lightVec, 3);
+        if (oD>0.0) scatter = cloudScatter(rayPosition, lightVec, 3);
 
         cloud              += oD;
     }
@@ -192,6 +189,8 @@ void pasted2DClouds(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in ve
     height = altitude + 250.0;
     clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
     height = altitude + 350.0;
+    clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    height = altitude + 450.0;
     clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
 
 

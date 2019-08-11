@@ -1,11 +1,28 @@
 #version 120
 
-const int noiseTextureResolution = 1024;
-
-#define CloudsType 1 //[0 1 2] //0 is no clouds (smoothest), 1 is 2D clouds (smooth), 2 is fake 3D clouds (less smooth)
+#define CloudsType 1 //[0 1 2 3] //0 is no clouds (smoothest), 1 is 2D clouds (smooth), 2 is fake 3D clouds (less smooth). and 3 is volumetric clouds (laggiest)
 
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
-//testing for my discord server
+#define altitude 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0] //if u are using volumetric clouds, do this 200.0 for the best look.
+#define thickness 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0 8050.0] //if u are using volumetric clouds, do this 200.0 for the best look.
+
+#if CloudsType == 0
+const int noiseTextureResolution = 512;
+#endif
+
+#if CloudsType == 1
+const int noiseTextureResolution = 1024;
+#endif
+
+#if CloudsType == 2
+const int noiseTextureResolution = 1024;
+#endif
+
+#if CloudsType == 3
+const int noiseTextureResolution = 512;
+#endif
+
+
 
 
 varying vec3 lightVector;
@@ -32,15 +49,10 @@ uniform vec3 cameraPosition;
 //uniform vec4 lightCol;
 
 uniform float frameTimeCounter;
-
-//those do not exist
-/*
-varying vec3 cloudCol;
-uniform vec3 sunColor;
-uniform vec3 nsunColor;
-uniform vec2 texelSize;
-*/
+uniform float viewHeight;
+uniform float viewWidth;
 uniform float far;
+uniform float near;
 
 
 uniform vec3 sunPosition;
@@ -84,6 +96,9 @@ vec4 getWorldSpacePositionFromCoord(in vec2 coord) {
 
 #include "/lib/clouds.glsl"
 
+#include "/lib/volumeclouds.glsl"
+#include "/lib/volumevoid.glsl"
+
 void main() {
 
      float height = 0.0;
@@ -112,6 +127,12 @@ void main() {
 
 #if CloudsType == 2
     pasted2DClouds(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
+
+#endif
+
+#if CloudsType == 3
+
+    if (!isTerrain) volumetric(sceneDepth, lightVector, sceneCol);
 
 #endif
 
