@@ -63,13 +63,14 @@ float scatterIntegral(float transmittance, const float coeff) {
     return transmittance * a - a;
 }
 
+#define VolumeSamples 20.0 //[6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0]
+
 void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
-    const int samples = 20;              //about 6-20 are fine depending on your preference
     float rayClip   = 600.0/far;        //this controls the maximum distance
-    float dither    = bayer32(gl_FragCoord.xy);
+    float dither    = fract(bayer64(gl_FragCoord.xy)+ frameCounter/8.0);
     float rayStart  = 0.0;              //zero unless you want the ray to start at a distance, in this case the clouds are usually a bit far away from the camera
     float rayEnd    = depthLin(Depth);
-    float rayStep   = distance(rayEnd, rayStart)/samples;
+    float rayStep   = distance(rayEnd, rayStart)/VolumeSamples;
     float rayDepth  = rayStart;         //starting depth
         rayDepth   += rayStep*dither;   //apply dither and go to first ray step position
 
@@ -77,13 +78,18 @@ void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
     float transmittance = 1.0;          //transmittance is basically how much of the light behind it will be absorbed
     float scatterCoefficient = 1.4;     //scatter intensity
     float transmittanceCoefficient = 1.0; //controls transmittance falloff
-    float density   = 150.0;            //adjust density until it looks good, great numbers are normal with this raymarcher
-    float weight    = 1.0/samples;      //make density independent from samplecount
+    float density   = 550.0;            //adjust density until it looks good, great numbers are normal with this raymarcher
+    float weight    = 1.0/VolumeSamples;      //make density independent from samplecount
 
-    vec3 sunlight = vec3(1.0, 0.92, 0.9);
-    vec3 skylight = vec3(0.2, 0.5, 1.0)*0.25;
+    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.25;
+    vec3 BrightSkylight = vec3(0.8, 0.8, 0.9) * 0.8;
+    vec3 BrightSunlight = vec3(1.0, 0.92, 0.9);
+    vec3 Yellowlight = vec3(1.0, 0.36, 0.08);
 
-    for (int i = 0; i<samples; ++i, rayDepth += rayStep) {
+    vec3 sunlight = vec3(TimeSunrise*Yellowlight + TimeNoon*BrightSunlight + TimeSunset*Yellowlight + TimeMidnight*BrightSunlight);
+    vec3 skylight = vec3(TimeSunrise*DarkSkylight + TimeNoon*BrightSkylight + TimeSunset*DarkSkylight + TimeMidnight*DarkSkylight);
+
+    for (int i = 0; i<VolumeSamples; ++i, rayDepth += rayStep) {
         if (rayDepth<rayStart) continue;
         vec3 rayP = rayPos(depthLinInv(rayDepth), rayClip);             //get ray position
         if (rayP.y>altitude+thickness || rayP.y<altitude) continue;     //skip step if ray is outside of cloud volume

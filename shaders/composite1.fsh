@@ -1,7 +1,14 @@
 #version 120
 
+uniform mat4 gbufferModelView;
+uniform mat4 gbufferProjection;
+
+uniform mat4 shadowModelView;
+
 #include "/lib/framebuffer.glsl"
 #include "/lib/torchcolor.glsl"
+
+const int noiseTextureResolution = 256; //Resolution of the noise
 
 #define BetterLighting
 
@@ -47,11 +54,6 @@ uniform float viewHeight;
 
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
 
