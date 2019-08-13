@@ -13,7 +13,7 @@ float getIsTransparent(in float materialId) {
     if(materialId == 95.0) {   // stained glass
         return 1.0;
     }
-    if(materialId == 30.0) {   // ice
+    if(materialId == 79.0) {   // ice
         return 1.0;
     }
     return 0.0;

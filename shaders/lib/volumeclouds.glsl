@@ -42,7 +42,7 @@ float volumeShape(in vec3 pos) {
         noise  += noise3D(pos, 12.0*size, wind)*0.125;  divider += 0.125;   //the bigger the size the smaller the noise
         noise  += noise3D(pos, 24.0*size, wind)*0.0125; divider += 0.0125;  //small scale noise adds detail
 
-        noise  += 0.05;   //coverage adjustment
+        noise += (0.85*rainStrength + 0.05*rainStrength);
 
         noise   = max(noise/divider, 0.0);  //we don't want negative noise values
         noise   = cubeSmooth(noise);    //this gives a nicer falloff

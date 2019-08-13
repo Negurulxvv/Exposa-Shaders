@@ -32,6 +32,8 @@ uniform float viewHeight;
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
 uniform vec3 sunPosition;
+uniform vec3 upPosition;
+uniform vec3 moonPosition;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -52,11 +54,15 @@ varying vec4 texcoord;
 
 float getDepth = 0.0;
 
-
+#include "/lib/sky_gradient.glsl"
 
 void main() {
     getDepth = texture2D(depthtex0, texcoord.st).r;
     vec3 color = texture2D(colortex0,texcoord.st).rgb;
+    
+    SkyGradient(cameraPosition, upPosition, sunPosition, moonPosition);
+
+    
 
     gl_FragData[0] = vec4(color, 1.0);
 }
