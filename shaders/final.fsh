@@ -16,30 +16,34 @@ void SoftVignette(inout vec3 color) {
 
 }
 
-vec3 convertToHRD(in vec3 color) {
-    vec3 HRDImage;
+vec3 BetterColors(in vec3 color) {
+    vec3 BetterColoredImage;
 
-    vec3 overExposed = color * 0.89f;
+    vec3 overExposed = color * 1.1;
 
-    vec3 underExposed = color / 2.0f;
+    vec3 underExposed = color / 1.1;
 
-    HRDImage = mix(underExposed, overExposed, color);
+    BetterColoredImage = mix(underExposed, overExposed, color);
 
 
-    return HRDImage;
+    return BetterColoredImage;
 }
 
+#define rcp(x) (1.0 / x)
 
+vec3 tonemap(in vec3 x) { return (x*(6.2*x+.5))*rcp((x*(6.2*x+1.7)+0.06)); }
 
 void main() {
 
     vec3 color = texture2D(colortex0, texcoord.st).rgb;
 
-    //color = convertToHRD(color);
+    color = BetterColors(color);
 
     #ifdef Vignette
     SoftVignette(color);
     #endif
+
+    color = tonemap(color);
 
     gl_FragColor = vec4(color.rgb, 1.0f);
 

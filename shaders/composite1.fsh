@@ -19,7 +19,7 @@ const int noiseTextureResolution = 256; //Resolution of the noise
 
 
 const float shadowDistance = 128.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
-const float shadowMapBias = 1.0-25.6/shadowDistance;
+const float shadowMapBias = 0.85;
 const float stp = 1.0;			//size of one step for raytracing algorithm
 const float ref = 0.05;			//refinement multiplier
 const float inc = 2.2;			//increasement factor at each step
@@ -30,7 +30,7 @@ uniform sampler2D gdepthtex;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex0;
-uniform sampler2D shadow;
+uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D noisetex;
 uniform sampler2D composite;
@@ -142,8 +142,8 @@ vec3 getShadowColor(in vec2 coord) {
         for(int x = -1; x <2; x++) {
             vec2 offset = vec2(x, y) / shadowMapResolution;
             offset = rotationMatrix * offset;
-            float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
+            float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
+            float visibility = step(shadowCoord.z - shadowMapSample, 0.003);
             vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
             vec3 dayColor = vec3(1.0);
             vec3 nightColor = vec3(0.0);
@@ -156,7 +156,7 @@ vec3 getShadowColor(in vec2 coord) {
         }
     }
     
-    return shadowColor * vec3(0.084);
+    return shadowColor * vec3(0.184);
     
 }
 

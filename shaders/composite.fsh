@@ -118,7 +118,7 @@ void main() {
 
     bool isTerrain = sceneDepth < 1.0;
 
-    if (!isTerrain) sceneCol     = pow(sceneCol, vec3(2.2));    //gamma correction on sky color
+    sceneCol    = pow(sceneCol, vec3(2.2));
     
     float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
 
