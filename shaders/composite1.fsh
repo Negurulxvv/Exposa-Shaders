@@ -143,7 +143,7 @@ vec3 getShadowColor(in vec2 coord) {
             vec2 offset = vec2(x, y) / shadowMapResolution;
             offset = rotationMatrix * offset;
             float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.003);
+            float visibility = step(shadowCoord.z - shadowMapSample, 0.001);
             vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
             vec3 dayColor = vec3(1.0);
             vec3 nightColor = vec3(0.0);

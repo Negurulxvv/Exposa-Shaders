@@ -9,7 +9,7 @@ varying float isTransparent;
 
 void main() {
 
-    if (texture2D(texture, texcoord.st).a < 0.1) {
+    if (texture2D(texture, texcoord.st).a < 0.6) {
         discard;
     }
     vec3 fragColor = color.rgb * texture2D(tex, texcoord.st).rgb;
