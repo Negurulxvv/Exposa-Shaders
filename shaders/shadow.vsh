@@ -2,6 +2,7 @@
 
 attribute vec4 mc_Entity;
 
+varying vec4 mcEntity;
 varying vec4 texcoord;
 varying vec4 color;
 varying float isTransparent;
@@ -24,6 +25,8 @@ void main() {
     color = gl_Color;
 
     isTransparent = getIsTransparent(mc_Entity.x);
+
+    mcEntity = mc_Entity;
 
     gl_Position = ftransform();
 }

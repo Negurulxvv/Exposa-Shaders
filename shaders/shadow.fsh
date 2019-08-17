@@ -2,14 +2,22 @@
 
 uniform sampler2D tex;
 uniform sampler2D texture;
+uniform sampler2D gdepth;
 
 varying vec4 texcoord;
 varying vec4 color;
+varying vec4 mcEntity;
 varying float isTransparent;
+
+float 	GetMaterialIDs(in vec2 coord) {			//Function that retrieves the texture that has all material IDs stored in it
+	return texture2D(gdepth, coord).r;
+}
 
 void main() {
 
-    if (texture2D(texture, texcoord.st).a < 0.6) {
+    float matID = GetMaterialIDs(texcoord.st);
+
+    if (texture2D(texture, texcoord.st).a < 0.35) {
         discard;
     }
     vec3 fragColor = color.rgb * texture2D(tex, texcoord.st).rgb;
