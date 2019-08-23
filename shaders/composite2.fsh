@@ -22,7 +22,7 @@ void main() {
 
     vec3 color = texture2D(colortex0, texcoord.st).rgb;
 
-    if(iswater < 0.9 && isEyeInWater == 2) {
+    if(isEyeInWater == 2) {
         float depth = texture2D(depthtex0, texcoord.st).r;
 
         vec3 fogColor = pow(vec3(195, 87, 0) / 255.0, vec3(2.2));
@@ -30,7 +30,7 @@ void main() {
         color = mix(color, fogColor, min(GetDepthLinear(texcoord.st) * 5.0f / far, 1.0));
     }
 
-    if(iswater < 0.9 && isEyeInWater == 1) {
+    if(isEyeInWater == 1) {
         float depth = texture2D(depthtex0, texcoord.st).r;
 
         vec3 fogColor = pow(vec3(0, 255, 355) / 255.0, vec3(2.2));
