@@ -146,11 +146,7 @@ vec3 getShadowColor(in vec2 coord) {
             vec3 dayColor = vec3(1.0);
             vec3 nightColor = vec3(0.0);
             vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
-            #ifdef ColoredLighting
-            shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
-            #else
             shadowColor += mix(colorSample, vec3(1.0), visibility);
-            #endif
         }
     }
     
@@ -158,14 +154,15 @@ vec3 getShadowColor(in vec2 coord) {
     
 }
 
+#ifdef ColoredLighting
+
+#endif
+
 
 vec3 calculateLitSurface(in vec3 color) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
-    #ifdef ColoredLighting
-    float ambientLighting = (0.95*TimeSunrise + 0.75*TimeNoon + 0.95*TimeSunset + 0.15*TimeMidnight); 
-    #else
-    float ambientLighting = 0.75;
-    #endif
+    float ambientLighting = 0.35;
+
 
     return color * (sunlightAmount + ambientLighting);
 }
@@ -180,6 +177,14 @@ void main() {
     vec3 finalComposite = texture2D(gcolor, texcoord.st).rgb;
     vec3 finalCompositeNormal = texture2D(gnormal, texcoord.st).rgb;
     vec3 finalCompositeDepth = texture2D(gdepth, texcoord.st).rgb;
+    
+    #ifdef Shadows
+    bool isTerrain = getDepth<1.0;
+
+    if (isTerrain) {
+        finalComposite = calculateLitSurface(finalComposite);
+    }
+    #endif
 
     gl_FragData[0] = vec4(finalComposite, 1.0);
     gl_FragData[1] = vec4(finalCompositeNormal, 1.0);

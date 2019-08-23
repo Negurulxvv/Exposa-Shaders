@@ -10,6 +10,11 @@ uniform mat4 shadowModelView;
 
 const int noiseTextureResolution = 256; //Resolution of the noise
 
+const bool 		shadowHardwareFiltering0 = true;
+
+const bool 		shadowcolor0Mipmap = true;
+const bool 		shadowcolor0Nearest = false;
+
 #define BetterLighting
 
 #define ShadowColor

@@ -1,9 +1,30 @@
 #version 120
 
-const int noiseTextureResolution = 1024;
+#define ExposaUnique
+
+#define CloudsType 1 //[0 1 2 3] //0 is no clouds (smoothest), 1 is 2D clouds (smooth), 2 is fake 3D clouds (less smooth). and 3 is volumetric clouds (laggiest)
 
 //I am from 2020 and I can confirm that we friccin did it boiis, we got em aliens
-//testing for my discord server
+#define altitude 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0] //if u are using volumetric clouds, do this 200.0 for the best look.
+#define thickness 4050.0      //[200.0 300 400.0 500.0 650.0 700.0 750.0 800.0 850.0 900.0 1050.0 1250.0 2050.0 3000.0 4050.0 8050.0] //if u are using volumetric clouds, do this 200.0 for the best look.
+
+#if CloudsType == 0
+const int noiseTextureResolution = 512;
+#endif
+
+#if CloudsType == 1
+const int noiseTextureResolution = 1024;
+#endif
+
+#if CloudsType == 2
+const int noiseTextureResolution = 1024;
+#endif
+
+#if CloudsType == 3
+const int noiseTextureResolution = 512;
+#endif
+
+
 
 
 varying vec3 lightVector;
@@ -14,8 +35,6 @@ varying vec3 sunlight;
 //varying float SdotU;
 
 uniform mat4 gbufferProjection;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferModelView;
 
 uniform sampler2D colortex0;
@@ -30,15 +49,11 @@ uniform vec3 cameraPosition;
 //uniform vec4 lightCol;
 
 uniform float frameTimeCounter;
-
-//those do not exist
-/*
-varying vec3 cloudCol;
-uniform vec3 sunColor;
-uniform vec3 nsunColor;
-uniform vec2 texelSize;
-*/
+uniform int frameCounter;
+uniform float viewHeight;
+uniform float viewWidth;
 uniform float far;
+uniform float near;
 
 
 uniform vec3 sunPosition;
@@ -62,6 +77,7 @@ vec2 wind[4] = vec2[4](vec2(abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter
 
 
 
+#include "/lib/framebuffer.glsl"
 
 vec4 getCameraSpacePositionFromCoord(in vec2 coord) {
     float depth = getDepth;
@@ -79,10 +95,16 @@ vec4 getWorldSpacePositionFromCoord(in vec2 coord) {
     return positionWorldSpace;
 }
 
-
 #include "/lib/clouds.glsl"
 
+#include "/lib/volumeclouds.glsl"
+#include "/lib/volumevoid.glsl"
+
 void main() {
+
+     #ifdef ExposaUnique
+
+     #endif
 
      float height = 0.0;
 
@@ -96,9 +118,28 @@ void main() {
 
     bool isTerrain = sceneDepth < 1.0;
 
-    if (!isTerrain) sceneCol     = pow(sceneCol, vec3(2.2));    //gamma correction on sky color
+    sceneCol    = pow(sceneCol, vec3(2.2));
     
     float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
+
+#if CloudsType == 0
+
+#endif
+
+#if CloudsType == 1
+    clouds_2D(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
+#endif
+
+#if CloudsType == 2
+    pasted2DClouds(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
+
+#endif
+
+#if CloudsType == 3
+
+    if (!isTerrain) volumetric(sceneDepth, lightVector, sceneCol);
+
+#endif
 
     /*DRAWBUFFERS:0*/
     gl_FragData[0] = vec4(sceneCol, 1.0);

@@ -1,32 +1,44 @@
 #version 120
-#extension GL_ARB_shader_texture_lod : enable
 
-
-//INSPIRED BY BSL CAPT TATSU CODE
-
-
-//#define DOField
-
-varying vec2 texcoord;
-
-uniform float aspectRatio;
-uniform float viewWidth;
-uniform float viewHeight;
-uniform float centerDepthSmooth;
-
+uniform sampler2D gaux1;
 uniform sampler2D colortex0;
-uniform sampler2D depthtex1;
+uniform sampler2D depthtex0;
 
-#include "/lib/DepthOfField.glsl"
+uniform float far;
+uniform float near;
+
+varying vec4 texcoord;
+
+uniform int isEyeInWater;
+
+float     GetDepthLinear(in vec2 coord) {          
+   return 2.0f * near * far / (far + near - (2.0f * texture2D(depthtex0, coord).x - 1.0f) * (far - near));
+}
 
 void main() {
-	vec3 color = texture2D(colortex0,texcoord.xy).rgb;
-	
-	//Depth of Field
-	#ifdef DOField
-	color = depthOfField(color);
-	#endif
-	
-/*DRAWBUFFERS:0*/
-	gl_FragData[0] = vec4(color,1.0);
+    vec3 aux = texture2D(gaux1, texcoord.st).rgb;
+
+    float iswater = float(aux.g > 0.04 && aux.g < 0.07);
+
+    vec3 color = texture2D(colortex0, texcoord.st).rgb;
+
+    if(iswater < 0.9 && isEyeInWater == 2) {
+        float depth = texture2D(depthtex0, texcoord.st).r;
+
+        vec3 fogColor = pow(vec3(195, 87, 0) / 255.0, vec3(2.2));
+
+        color = mix(color, fogColor, min(GetDepthLinear(texcoord.st) * 5.0f / far, 1.0));
+    }
+
+    if(iswater < 0.9 && isEyeInWater == 1) {
+        float depth = texture2D(depthtex0, texcoord.st).r;
+
+        vec3 fogColor = pow(vec3(0, 255, 355) / 255.0, vec3(2.2));
+
+        color = mix(color, fogColor, min(GetDepthLinear(texcoord.st) * 0.3f / far, 1.0));
+    }
+
+    gl_FragData[0] = vec4(color, 1.0);
+
+
 }

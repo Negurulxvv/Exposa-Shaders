@@ -1,7 +1,19 @@
 #version 120
 
+uniform mat4 gbufferModelView;
+uniform mat4 gbufferProjection;
+
+uniform mat4 shadowModelView;
+
 #include "/lib/framebuffer.glsl"
 #include "/lib/torchcolor.glsl"
+
+const int noiseTextureResolution = 256; //Resolution of the noise
+
+const bool 		shadowHardwareFiltering0 = true;
+
+const bool 		shadowcolor0Mipmap = true;
+const bool 		shadowcolor0Nearest = false;
 
 #define BetterLighting
 
@@ -12,7 +24,7 @@
 
 
 const float shadowDistance = 128.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
-const float shadowMapBias = 1.0-25.6/shadowDistance;
+const float shadowMapBias = 0.85;
 const float stp = 1.0;			//size of one step for raytracing algorithm
 const float ref = 0.05;			//refinement multiplier
 const float inc = 2.2;			//increasement factor at each step
@@ -23,7 +35,7 @@ uniform sampler2D gdepthtex;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex0;
-uniform sampler2D shadow;
+uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D noisetex;
 uniform sampler2D composite;
@@ -47,11 +59,6 @@ uniform float viewHeight;
 
 uniform vec3 skyColor;
 uniform vec3 cameraPosition;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
 
 
@@ -140,29 +147,32 @@ vec3 getShadowColor(in vec2 coord) {
         for(int x = -1; x <2; x++) {
             vec2 offset = vec2(x, y) / shadowMapResolution;
             offset = rotationMatrix * offset;
-            float shadowMapSample = texture2D(shadow, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.002);
+            float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
+            float visibility = step(shadowCoord.z - shadowMapSample, 0.001);
             vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
             vec3 dayColor = vec3(1.0);
             vec3 nightColor = vec3(0.0);
             vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
+            #ifdef ColoredLighting
+            shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
+            #else
             shadowColor += mix(colorSample, vec3(1.0), visibility);
+            #endif
         }
     }
     
-    return shadowColor * vec3(0.084);
+    return shadowColor * vec3(0.199);
     
 }
-
-#ifdef ColoredLighting
-
-#endif
 
 
 vec3 calculateLitSurface(in vec3 color) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
-    float ambientLighting = 0.35;
-
+    #ifdef ColoredLighting
+    float ambientLighting = (0.65*TimeSunrise + 0.35*TimeNoon + 0.65*TimeSunset + 0.55*TimeMidnight); 
+    #else
+    float ambientLighting = 0.75;
+    #endif
 
     return color * (sunlightAmount + ambientLighting);
 }

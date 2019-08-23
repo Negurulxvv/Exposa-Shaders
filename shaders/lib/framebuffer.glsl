@@ -1,7 +1,7 @@
 const int RGBA16                 = 1;             
 const int gcolorFormat           =  RGBA16;  
 const int colortex5Format        =  RGBA16;
-const int shadowMapResolution    = 8192; //Resolution of the Shadows
+const int shadowMapResolution    =  8092; //Resolution of the Shadows
 const bool colortex5Clear = false;
 
 const float sunPathRotation   = -40.0;
