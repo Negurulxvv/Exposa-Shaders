@@ -7,6 +7,7 @@ uniform mat4 shadowModelView;
 
 #include "/lib/framebuffer.glsl"
 #include "/lib/torchcolor.glsl"
+#include "/lib/poisson.glsl"
 
 const int noiseTextureResolution = 256; //Resolution of the noise
 
@@ -122,6 +123,7 @@ vec3 getShadowSpacePosition(in vec2 coord) {
     return positionShadowSpace.xyz * 0.5 + 0.5;
 }
 
+
 //Rotation for the shadows
 mat2 getRotationMatrix(in vec2 coord) {
     float rotationAmount = texture2D(
@@ -137,31 +139,63 @@ mat2 getRotationMatrix(in vec2 coord) {
     );
 }
 
+#define PCSS_SAMPLE_COUNT 3
+
+float getPenumbraWidth(in vec3 shadowCoord, in sampler2D shadowTexture, in mat2 rot) {
+    float dFragment = shadowCoord.z; //distance from pixel to light
+    float dBlocker = 0.0; //distance from blocker to light
+    float penumbra = 0.0;
+    
+    float shadowMapSample; //duh
+    float numBlockers = 0.0;
+
+    float lightSize  = 105.0;
+    float searchSize = lightSize / 10.0;
+
+    for (int x = -PCSS_SAMPLE_COUNT; x < PCSS_SAMPLE_COUNT; x++) {
+        for (int y = -PCSS_SAMPLE_COUNT; y < PCSS_SAMPLE_COUNT; y++) {
+            vec2 sampleCoord = shadowCoord.st + rot * (vec2(x, y) * searchSize / (shadowMapResolution));
+            shadowMapSample = texture2D(shadowTexture, sampleCoord, 2.0).r;
+
+            dBlocker += shadowMapSample;
+            numBlockers += 1.0;
+        }
+    }
+
+    if(numBlockers > 0.0) {
+		dBlocker /= numBlockers;
+		penumbra = (dFragment - dBlocker) * lightSize;
+	}
+
+    return clamp(max(penumbra, 0.5), 0.0, lightSize);
+}
+
 //Lighting and shadow code
 vec3 getShadowColor(in vec2 coord) {
     vec3 shadowCoord = getShadowSpacePosition(coord);
     
     mat2 rotationMatrix = getRotationMatrix(coord);
+    float shadowDist = getPenumbraWidth(shadowCoord, shadowtex0, rotationMatrix);
     vec3 shadowColor = vec3(0.0);
-    for(int y = -1; y < 2; y++) {
-        for(int x = -1; x <2; x++) {
-            vec2 offset = vec2(x, y) / shadowMapResolution;
-            offset = rotationMatrix * offset;
-            float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
-            float visibility = step(shadowCoord.z - shadowMapSample, 0.001);
-            vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
-            vec3 dayColor = vec3(1.0);
-            vec3 nightColor = vec3(0.0);
-            vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
-            #ifdef ColoredLighting
-            shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
-            #else
-            shadowColor += mix(colorSample, vec3(1.0), visibility);
-            #endif
-        }
+    for(int i = 0; i < samplePoints.length(); i++) {
+         //shadowDist *= 2.0;
+         vec2 offset = samplePoints[i] / shadowMapResolution;
+        offset = rotationMatrix * offset;
+        offset *= shadowDist;
+        float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
+        float visibility = step(shadowCoord.z - shadowMapSample, 0.001);
+        vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
+        vec3 dayColor = vec3(1.0);
+        vec3 nightColor = vec3(0.0);
+        vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
+        #ifdef ColoredLighting
+        shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
+        #else
+        shadowColor += mix(colorSample, vec3(1.0), visibility);
+        #endif
     }
     
-    return shadowColor * vec3(0.199);
+    return vec3(shadowColor) / samplePoints.length();
     
 }
 

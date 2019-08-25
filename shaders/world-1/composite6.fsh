@@ -26,7 +26,6 @@ uniform sampler2D colortex0;
 uniform sampler2D depthtex1;
 
 #include "/lib/motionBlur.glsl"
-#include "/lib/dither.glsl"
 #include "/lib/torchcolor.glsl"
 
 void main() {

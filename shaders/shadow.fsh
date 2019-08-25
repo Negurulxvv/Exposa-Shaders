@@ -17,7 +17,7 @@ void main() {
 
     float matID = GetMaterialIDs(texcoord.st);
 
-    if (texture2D(texture, texcoord.st).a < 0.35) {
+    if (texture2D(texture, texcoord.st).a < 0.40) {
         discard;
     }
     vec3 fragColor = color.rgb * texture2D(tex, texcoord.st).rgb;
