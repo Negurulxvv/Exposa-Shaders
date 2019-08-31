@@ -31,7 +31,7 @@ void main() {
 	
 	vec2 velocity = (texcoord.st-prvcoord.xy)*view;
 	float blendfactor = float(prvcoord.x > 0.0 && prvcoord.x < 1.0 && prvcoord.y > 0.0 && prvcoord.y < 1.0);
-	blendfactor *= clamp(1.0-sqrt(length(velocity))/2.0,0.0,1.0)*0.31+0.61;
+	blendfactor *= clamp(1.0-sqrt(length(velocity))/2.0,0.0,1.0)*0.3+0.6;
 	
 	tempcolor = mix(color,tempcolor,blendfactor);
 	#endif

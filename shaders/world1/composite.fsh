@@ -64,42 +64,6 @@ uniform int worldTime;
 
 float getDepth = 1.1;
 
-float timefract = worldTime;
-
-float TimeSunrise  = ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0) + (1.0 - (clamp(timefract, 0.0, 4000.0)/4000.0));
-float TimeNoon     = ((clamp(timefract, 0.0, 4000.0)) / 4000.0) - ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0);
-float TimeSunset   = ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0) - ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0);
-float TimeMidnight = ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0);
-vec2 wind[4] = vec2[4](vec2(abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5))+vec2(0.5),
-					vec2(-abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5)),
-					vec2(-abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)),
-					vec2(abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)));
-
-
-
-#include "/lib/framebuffer.glsl"
-
-vec4 getCameraSpacePositionFromCoord(in vec2 coord) {
-    float depth = getDepth;
-    vec4 positionNdcSpace = vec4(coord.s * 2.0 - 1.0, coord.t * 2.0 - 1.0, 2.0 * depth - 1.0, 1.0);
-    vec4 positionCameraSpace = gbufferProjectionInverse * positionNdcSpace;
-
-    return positionCameraSpace / positionCameraSpace.w;
-}
-
-vec4 getWorldSpacePositionFromCoord(in vec2 coord) {
-    vec4 positionCameraSpace = getCameraSpacePositionFromCoord(coord);
-    vec4 positionWorldSpace = gbufferModelViewInverse * positionCameraSpace;
-    positionWorldSpace.xyz += cameraPosition.xyz;
-
-    return positionWorldSpace;
-}
-
-#include "/lib/clouds.glsl"
-
-#include "/lib/volumeclouds.glsl"
-#include "/lib/volumevoid.glsl"
-
 void main() {
 
      #ifdef ExposaUnique
@@ -110,36 +74,8 @@ void main() {
 
     vec3 sceneCol   = texture2D(colortex0, texcoord.st).rgb;
 
-    getDepth = texture2D(depthtex1, texcoord.st).r;
-
-    vec3 worldPos = getWorldSpacePositionFromCoord(texcoord.st).xyz;
-    
-    float sceneDepth = texture2D(depthtex0, texcoord.st).r;
-
-    bool isTerrain = sceneDepth < 1.0;
-
     sceneCol    = pow(sceneCol, vec3(2.2));
-    
-    float sunLightBrtness = (1.2*TimeSunrise + 1.5*TimeNoon + 1.2*TimeSunset + 0.65*TimeMidnight);
-
-#if CloudsType == 0
-
-#endif
-
-#if CloudsType == 1
-    clouds_2D(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
-#endif
-
-#if CloudsType == 2
-    pasted2DClouds(worldPos, cameraPosition, lightVector, sunlight*sunLightBrtness, colSky, isTerrain, height, sceneCol);
-
-#endif
-
-#if CloudsType == 3
-
-    if (!isTerrain) volumetric(sceneDepth, lightVector, sceneCol);
-
-#endif
+   
 
     /*DRAWBUFFERS:0*/
     gl_FragData[0] = vec4(sceneCol, 1.0);

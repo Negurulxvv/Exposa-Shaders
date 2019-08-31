@@ -8,7 +8,7 @@ uniform mat4 shadowModelView;
 #include "/lib/framebuffer.glsl"
 #include "/lib/torchcolor.glsl"
 #include "/lib/poisson.glsl"
-
+#include "/lib/dither.glsl"
 const int noiseTextureResolution = 256; //Resolution of the noise
 
 const bool 		shadowHardwareFiltering0 = true;
@@ -19,6 +19,8 @@ const bool 		shadowcolor0Nearest = false;
 #define BetterLighting
 
 #define ShadowColor
+
+#define AmbientOcclusion
 
 //#define Shadows //Enable shadows to make this a lil more realistic at a medium peformance cost.
 #define ColoredLighting //Makes the lighting look better but you NEED to enable shadows to make it work.
@@ -74,8 +76,13 @@ varying vec4 texcoord;
 
 
 
-
 /* DRAWBUFFERS:012 */
+
+float ld(float depth) {
+   return (2.0 * near) / (far + near - depth * (far - near));
+}
+
+#include "/lib/SSAO.glsl"
 
 //Worldtime
 float timefract = worldTime;
@@ -199,8 +206,7 @@ vec3 getShadowColor(in vec2 coord) {
     
 }
 
-
-vec3 calculateLitSurface(in vec3 color) {
+vec3 calculateLitSurface(in vec3 color, in float dither) {
     vec3 sunlightAmount = getShadowColor(texcoord.st);
     #ifdef ColoredLighting
     float ambientLighting = (0.65*TimeSunrise + 0.35*TimeNoon + 0.65*TimeSunset + 0.55*TimeMidnight); 
@@ -208,7 +214,13 @@ vec3 calculateLitSurface(in vec3 color) {
     float ambientLighting = 0.75;
     #endif
 
-    return color * (sunlightAmount + ambientLighting);
+    #ifdef AmbientOcclusion
+    float ao = dbao(depthtex0, dither, texcoord.st);
+    #else
+    float ao = 1.0;
+    #endif
+
+    return color * (ambientLighting * ao + sunlightAmount);
 }
 
 
@@ -216,6 +228,7 @@ void main() {
     vec4 sample4 = texture2D(colortex4, texcoord.st);
     vec2 lightmap = sample4.xy;
 
+    float dither = fract(bayer64(gl_FragCoord.xy)+ frameCounter/8.0);
 
     getDepth = texture2D(depthtex1, texcoord.st).r;
     vec3 finalComposite = texture2D(gcolor, texcoord.st).rgb;
@@ -226,7 +239,7 @@ void main() {
     bool isTerrain = getDepth<1.0;
 
     if (isTerrain) {
-        finalComposite = calculateLitSurface(finalComposite);
+        finalComposite = calculateLitSurface(finalComposite, dither);
     }
     #endif
 

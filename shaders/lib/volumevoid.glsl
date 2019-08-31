@@ -38,7 +38,7 @@ vec3 rayPos(in float depth, const float scale) {           //funtion to get the 
 }
 
 float cloud_scatter(in vec3 pos, in vec3 lightVec, const int steps) {
-    float density   = 0.15;     //this usually needs some sort of adjustment
+    float density   = 0.25;     //this usually needs some sort of adjustment
 
     //get direction for raymarched lighting
     vec3 direction  = lightVec;
@@ -63,7 +63,7 @@ float scatterIntegral(float transmittance, const float coeff) {
     return transmittance * a - a;
 }
 
-#define VolumeSamples 20.0 //[6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0]
+#define VolumeSamples 30.0 //[6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0]
 
 void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
     float rayClip   = 600.0/far;        //this controls the maximum distance
@@ -75,18 +75,18 @@ void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
         rayDepth   += rayStep*dither;   //apply dither and go to first ray step position
 
     float scatter   = 0.0;              //should always be zero
-    float transmittance = 1.0;          //transmittance is basically how much of the light behind it will be absorbed
-    float scatterCoefficient = 1.4;     //scatter intensity
+    float transmittance = 0.9;          //transmittance is basically how much of the light behind it will be absorbed
+    float scatterCoefficient = 1.1;     //scatter intensity
     float transmittanceCoefficient = 1.0; //controls transmittance falloff
-    float density   = 550.0;            //adjust density until it looks good, great numbers are normal with this raymarcher
+    float density   = 850.0;            //adjust density until it looks good, great numbers are normal with this raymarcher
     float weight    = 1.0/VolumeSamples;      //make density independent from samplecount
 
-    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.25;
-    vec3 BrightSkylight = vec3(0.8, 0.8, 0.9) * 0.8;
+    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.05;
+    vec3 BrightSkylight = vec3(0.2, 0.5, 0.9) * 0.9;
     vec3 BrightSunlight = vec3(1.0, 0.92, 0.9);
     vec3 Yellowlight = vec3(1.0, 0.36, 0.08);
-
-    vec3 sunlight = vec3(TimeSunrise*Yellowlight + TimeNoon*BrightSunlight + TimeSunset*Yellowlight + TimeMidnight*BrightSunlight);
+    vec3 DarkSunlight = vec3(0.8, 0.8, 0.9) * 0.15;
+    vec3 sunlight = vec3(TimeSunrise*Yellowlight + TimeNoon*BrightSunlight + TimeSunset*Yellowlight + TimeMidnight*DarkSunlight);
     vec3 skylight = vec3(TimeSunrise*DarkSkylight + TimeNoon*BrightSkylight + TimeSunset*DarkSkylight + TimeMidnight*DarkSkylight);
 
     for (int i = 0; i<VolumeSamples; ++i, rayDepth += rayStep) {
@@ -97,8 +97,8 @@ void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
 
         float stepTransmittance = exp2(-oD*transmittanceCoefficient);
 
-        float powder = 1.0-exp(-(oD/weight/density)*4.0)*0.25;          //this adds some detail to the lighting
-        float light = cloud_scatter(rayP, lightVector, 4)*powder*scatterIntegral(stepTransmittance, 1.11)*transmittance;
+        float powder = 2.80-exp(-(oD/weight/density)*2.0)*0.0025;          //this adds some detail to the lighting
+        float light = cloud_scatter(rayP, lightVector, 6)*powder*scatterIntegral(stepTransmittance, 1.11)*transmittance;
 
         scatter += light*scatterCoefficient;   //get scatter value
 
