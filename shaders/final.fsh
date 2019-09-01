@@ -31,7 +31,7 @@ vec3 BetterColors(in vec3 color) {
 
 #define rcp(x) (1.0 / x)
 
-vec3 tonemap(in vec3 x) { return (x*(6.2*x+.5))*rcp((x*(6.2*x+1.7)+0.06)); }
+vec3 tonemap(in vec3 x) { return (x*(6.8*x+0.2))*rcp((x*(6.8*x+1.3)+0.06)); }
 
 void main() {
 

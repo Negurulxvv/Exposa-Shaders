@@ -81,13 +81,14 @@ void volumetric(in float Depth, in vec3 lightVector, inout vec3 scenecol) {
     float density   = 850.0;            //adjust density until it looks good, great numbers are normal with this raymarcher
     float weight    = 1.0/VolumeSamples;      //make density independent from samplecount
 
-    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.05;
+    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.15;
+    vec3 DarkerSkylight = vec3(0.1, 0.5, 1.0)*0.15;
     vec3 BrightSkylight = vec3(0.2, 0.5, 0.9) * 0.9;
     vec3 BrightSunlight = vec3(1.0, 0.92, 0.9);
     vec3 Yellowlight = vec3(1.0, 0.36, 0.08);
-    vec3 DarkSunlight = vec3(0.8, 0.8, 0.9) * 0.15;
+    vec3 DarkSunlight = vec3(0.8, 0.8, 0.9) * 0.05;
     vec3 sunlight = vec3(TimeSunrise*Yellowlight + TimeNoon*BrightSunlight + TimeSunset*Yellowlight + TimeMidnight*DarkSunlight);
-    vec3 skylight = vec3(TimeSunrise*DarkSkylight + TimeNoon*BrightSkylight + TimeSunset*DarkSkylight + TimeMidnight*DarkSkylight);
+    vec3 skylight = vec3(TimeSunrise*DarkSkylight + TimeNoon*BrightSkylight + TimeSunset*DarkSkylight + TimeMidnight*DarkerSkylight);
 
     for (int i = 0; i<VolumeSamples; ++i, rayDepth += rayStep) {
         if (rayDepth<rayStart) continue;
