@@ -17,16 +17,7 @@ void SoftVignette(inout vec3 color) {
 }
 
 vec3 BetterColors(in vec3 color) {
-    vec3 BetterColoredImage;
-
-    vec3 overExposed = color * 1.1;
-
-    vec3 underExposed = color / 1.1;
-
-    BetterColoredImage = mix(underExposed, overExposed, color);
-
-
-    return BetterColoredImage;
+    return color * (0.2 * color + 0.9);
 }
 
 #define rcp(x) (1.0 / x)
@@ -37,13 +28,12 @@ void main() {
 
     vec3 color = texture2D(colortex0, texcoord.st).rgb;
 
-    color = BetterColors(color);
-
     #ifdef Vignette
     SoftVignette(color);
     #endif
 
     color = tonemap(color);
+    color = BetterColors(color);
 
     gl_FragColor = vec4(color.rgb, 1.0f);
 

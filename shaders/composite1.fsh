@@ -11,19 +11,13 @@ uniform mat4 shadowModelView;
 #include "/lib/dither.glsl"
 const int noiseTextureResolution = 256; //Resolution of the noise
 
-const bool 		shadowHardwareFiltering0 = true;
-
 const bool 		shadowcolor0Mipmap = true;
 const bool 		shadowcolor0Nearest = false;
 
 #define BetterLighting
 
-#define ShadowColor
-
 #define AmbientOcclusion
 
-//#define Shadows //Enable shadows to make this a lil more realistic at a medium peformance cost.
-#define ColoredLighting //Makes the lighting look better but you NEED to enable shadows to make it work.
 
 
 const float shadowDistance = 128.0; //[32.0 64.0 128.0 256.0 512.0 1024.0]
@@ -38,6 +32,7 @@ uniform sampler2D gdepthtex;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex0;
+uniform sampler2D colortex1;
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D noisetex;
@@ -66,17 +61,10 @@ uniform mat4 shadowProjection;
 
 
 varying vec3 lightVector;
-varying vec3 ambient_color;
-varying vec3 sky_color;
-varying vec3 fog_color;
-varying vec3 sunlight;
-varying vec3 colorWaterMurk;
-varying vec3 colorWaterBlue;
 varying vec4 texcoord;
 
 
 
-/* DRAWBUFFERS:012 */
 
 float ld(float depth) {
    return (2.0 * near) / (far + near - depth * (far - near));
@@ -92,11 +80,6 @@ float TimeSunrise  = ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0) +
 float TimeNoon     = ((clamp(timefract, 0.0, 4000.0)) / 4000.0) - ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0);
 float TimeSunset   = ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0) - ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0);
 float TimeMidnight = ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0);
-vec2 wind[4] = vec2[4](vec2(abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5))+vec2(0.5),
-					vec2(-abs(frameTimeCounter/1000.-0.5),abs(frameTimeCounter/1000.-0.5)),
-					vec2(-abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)),
-					vec2(abs(frameTimeCounter/1000.-0.5),-abs(frameTimeCounter/1000.-0.5)));
-
 //Depth
 float getDepth = 1.1;
 
@@ -157,7 +140,7 @@ float getPenumbraWidth(in vec3 shadowCoord, in sampler2D shadowTexture, in mat2 
     float numBlockers = 0.0;
 
     float lightSize  = 105.0;
-    float searchSize = lightSize / 10.0;
+    float searchSize = lightSize / 50.0;
 
     for (int x = -PCSS_SAMPLE_COUNT; x < PCSS_SAMPLE_COUNT; x++) {
         for (int y = -PCSS_SAMPLE_COUNT; y < PCSS_SAMPLE_COUNT; y++) {
@@ -191,15 +174,8 @@ vec3 getShadowColor(in vec2 coord) {
         offset *= shadowDist;
         float shadowMapSample = texture2D(shadowtex0, shadowCoord.st + offset).r;
         float visibility = step(shadowCoord.z - shadowMapSample, 0.001);
-        vec3 sunsetColor = vec3(1.0, 0.5, 0.4);
-        vec3 dayColor = vec3(1.0);
-        vec3 nightColor = vec3(0.0);
         vec3 colorSample = texture2D(shadowcolor0, shadowCoord.st + offset).rgb;
-        #ifdef ColoredLighting
-        shadowColor += mix(colorSample, vec3(sunsetColor*TimeSunrise + dayColor*TimeNoon + sunsetColor*TimeSunset + nightColor*TimeMidnight), visibility);
-        #else
         shadowColor += mix(colorSample, vec3(1.0), visibility);
-        #endif
     }
     
     return vec3(shadowColor) / samplePoints.length();
@@ -207,20 +183,35 @@ vec3 getShadowColor(in vec2 coord) {
 }
 
 vec3 calculateLitSurface(in vec3 color, in float dither) {
-    vec3 sunlightAmount = getShadowColor(texcoord.st);
-    #ifdef ColoredLighting
-    float ambientLighting = (0.65*TimeSunrise + 0.35*TimeNoon + 0.65*TimeSunset + 0.55*TimeMidnight); 
-    #else
-    float ambientLighting = 0.75;
-    #endif
+	float torchlight = texture2D(colortex1,texcoord.xy).r;
+	float skylight = texture2D(colortex1,texcoord.xy).g;
+	torchlight *= torchlight; skylight *= skylight;
+    
+	vec3 sunsetSkyColor = vec3(0.05);
+	vec3 daySkyColor = vec3(0.1, 0.5, 1.0)*0.34;
+	vec3 nightSkyColor = vec3(0.001,0.0015,0.0025);
+    vec3 ambientLighting = (sunsetSkyColor*TimeSunrise + daySkyColor*TimeNoon + sunsetSkyColor*TimeSunset + nightSkyColor*TimeMidnight) * skylight;
+	
+    vec3 sunlightAmount = getShadowColor(texcoord.st) * (1.0 - 0.95 * rainStrength);
+	
+	vec3 sunsetSunColor = vec3(0.8, 0.4, 0.3);
+	vec3 daySunColor = vec3(1.0);
+	vec3 nightSunColor = vec3(0.02,0.03,0.05);
+	vec3 sunlightColor = sunsetSunColor*TimeSunrise + daySunColor*TimeNoon + sunsetSunColor*TimeSunset + nightSunColor*TimeMidnight;
 
     #ifdef AmbientOcclusion
     float ao = dbao(depthtex0, dither, texcoord.st);
     #else
     float ao = 1.0;
     #endif
+	
+	vec3 torchcolor = (torchlight * 1.5 + pow(torchlight,7.0)) * vec3(1.0,0.35,0.1);
+	
+	float minlight = 0.01;
 
-    return color * (ambientLighting * ao + sunlightAmount);
+	vec3 finalLighting = (ambientLighting + torchcolor + minlight) * ao + (sunlightAmount * sunlightColor);
+	
+    return color * finalLighting;
 }
 
 
@@ -232,17 +223,19 @@ void main() {
 
     getDepth = texture2D(depthtex1, texcoord.st).r;
     vec3 finalComposite = texture2D(gcolor, texcoord.st).rgb;
+	finalComposite = pow(finalComposite,vec3(2.2));
     vec3 finalCompositeNormal = texture2D(gnormal, texcoord.st).rgb;
     vec3 finalCompositeDepth = texture2D(gdepth, texcoord.st).rgb;
     
-    #ifdef Shadows
     bool isTerrain = getDepth<1.0;
 
     if (isTerrain) {
         finalComposite = calculateLitSurface(finalComposite, dither);
     }
-    #endif
-
+	
+	finalComposite = pow(finalComposite,vec3(1.0/2.2));
+	
+/* DRAWBUFFERS:012 */
     gl_FragData[0] = vec4(finalComposite, 1.0);
     gl_FragData[1] = vec4(finalCompositeNormal, 1.0);
     gl_FragData[2] = vec4(finalCompositeDepth, 1.0);
