@@ -19,11 +19,27 @@ float getIsTransparent(in float materialId) {
     return 0.0;
 }
 
+#define SHADOW_MAP_BIAS 0.85
+vec4 BiasShadowProjection(in vec4 projectedShadowSpacePosition) {
+
+	vec2 pos = abs(projectedShadowSpacePosition.xy * 1.165);
+	vec2 posSQ = pos*pos;
+	
+	float dist = pow(posSQ.x*posSQ.x*posSQ.x + posSQ.y*posSQ.y*posSQ.y, 1.0 / 6.0);
+
+	float distortFactor = (1.0 - SHADOW_MAP_BIAS) + dist * SHADOW_MAP_BIAS;
+
+	projectedShadowSpacePosition.xy /= distortFactor*0.92;
+
+
+
+	return projectedShadowSpacePosition;
+}
+
 void main() {
+    gl_Position = BiasShadowProjection(ftransform());
     texcoord = gl_MultiTexCoord0;
     color = gl_Color;
 
     isTransparent = getIsTransparent(mc_Entity.x);
-
-    gl_Position = ftransform();
 }

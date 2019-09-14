@@ -1,6 +1,5 @@
 #version 120
 
-uniform sampler2D gaux1;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex0;
 
@@ -30,9 +29,6 @@ float TimeSunset   = ((clamp(timefract, 8000.0, 12000.0) - 8000.0) / 4000.0) - (
 float TimeMidnight = ((clamp(timefract, 12000.0, 12750.0) - 12000.0) / 750.0) - ((clamp(timefract, 23000.0, 24000.0) - 23000.0) / 1000.0);
 
 void main() {
-    vec3 aux = texture2D(gaux1, texcoord.st).rgb;
-
-    float iswater = float(aux.g > 0.04 && aux.g < 0.07);
 
     vec3 color = texture2D(colortex0, texcoord.st).rgb;
 

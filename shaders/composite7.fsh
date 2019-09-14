@@ -14,7 +14,9 @@ varying vec4 texcoord;
 
 #include "/lib/framebuffer.glsl"
 
+#ifdef TAA
 #include "/lib/taa.glsl"
+#endif
 
 float getDepth = 0.0;
 

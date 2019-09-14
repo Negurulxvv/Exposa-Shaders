@@ -25,8 +25,9 @@ uniform mat4 gbufferPreviousProjection;
 uniform sampler2D colortex0;
 uniform sampler2D depthtex1;
 
+#ifdef MotionBlur
 #include "/lib/motionBlur.glsl"
-#include "/lib/torchcolor.glsl"
+#endif
 
 void main() {
     vec3 color = texture2D(colortex0, texcoord.st).rgb;

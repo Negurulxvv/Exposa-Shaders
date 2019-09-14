@@ -11,7 +11,9 @@ uniform sampler2D colortex1;
 
 varying vec2 texcoord;
 
+#ifdef Bloom
 #include "/lib/bloom.glsl"
+#endif
 
 void main() {
 

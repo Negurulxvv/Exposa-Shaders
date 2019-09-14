@@ -101,6 +101,25 @@ vec4 getWorldSpacePosition(in vec2 coord) {
     return positionWorldSpace;
 }
 
+
+#define SHADOW_MAP_BIAS 0.85
+vec4 BiasShadowProjection(in vec4 projectedShadowSpacePosition) {
+
+	vec2 pos = abs(projectedShadowSpacePosition.xy * 1.165);
+	vec2 posSQ = pos*pos;
+	
+	float dist = pow(posSQ.x*posSQ.x*posSQ.x + posSQ.y*posSQ.y*posSQ.y, 1.0 / 6.0);
+
+	float distortFactor = (1.0 - SHADOW_MAP_BIAS) + dist * SHADOW_MAP_BIAS;
+
+	projectedShadowSpacePosition.xy /= distortFactor*0.92;
+
+
+
+	return projectedShadowSpacePosition;
+}
+
+
 //What gets the shadow position
 vec3 getShadowSpacePosition(in vec2 coord) {
     vec4 positionWorldSpace = getWorldSpacePosition(coord);
@@ -108,11 +127,10 @@ vec3 getShadowSpacePosition(in vec2 coord) {
     positionWorldSpace.xyz -= cameraPosition;
     vec4 positionShadowSpace = shadowModelView * positionWorldSpace;
     positionShadowSpace = shadowProjection * positionShadowSpace;
-    positionShadowSpace /= positionShadowSpace.w;
+    positionShadowSpace = BiasShadowProjection(positionShadowSpace);
 
     return positionShadowSpace.xyz * 0.5 + 0.5;
 }
-
 
 //Rotation for the shadows
 mat2 getRotationMatrix(in vec2 coord) {
@@ -140,7 +158,7 @@ float getPenumbraWidth(in vec3 shadowCoord, in sampler2D shadowTexture, in mat2 
     float numBlockers = 0.0;
 
     float lightSize  = 105.0;
-    float searchSize = lightSize / 50.0;
+    float searchSize = lightSize / 120.0;
 
     for (int x = -PCSS_SAMPLE_COUNT; x < PCSS_SAMPLE_COUNT; x++) {
         for (int y = -PCSS_SAMPLE_COUNT; y < PCSS_SAMPLE_COUNT; y++) {
@@ -168,7 +186,6 @@ vec3 getShadowColor(in vec2 coord) {
     float shadowDist = getPenumbraWidth(shadowCoord, shadowtex0, rotationMatrix);
     vec3 shadowColor = vec3(0.0);
     for(int i = 0; i < samplePoints.length(); i++) {
-         //shadowDist *= 2.0;
          vec2 offset = samplePoints[i] / shadowMapResolution;
         offset = rotationMatrix * offset;
         offset *= shadowDist;
@@ -188,7 +205,7 @@ vec3 calculateLitSurface(in vec3 color, in float dither) {
 	torchlight *= torchlight; skylight *= skylight;
     
 	vec3 sunsetSkyColor = vec3(0.05);
-	vec3 daySkyColor = vec3(0.1, 0.5, 1.0)*0.34;
+	vec3 daySkyColor = vec3(0.3, 0.5, 1.1)*0.2;
 	vec3 nightSkyColor = vec3(0.001,0.0015,0.0025);
     vec3 ambientLighting = (sunsetSkyColor*TimeSunrise + daySkyColor*TimeNoon + sunsetSkyColor*TimeSunset + nightSkyColor*TimeMidnight) * skylight;
 	

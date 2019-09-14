@@ -10,7 +10,7 @@ uniform sampler2D noisetex;
 float Nnoise2D(in vec2 coord, in float size) {
     coord      *= size;
     coord      /= noiseTextureResolution;
-    return texture2D(noisetex, coord).x*2.0-1.0;
+    return texture2D(noisetex, coord).z*2.0-1.0;
 }
 
 float fake3D(in vec2 coord, in float size) {
@@ -41,6 +41,10 @@ float Nnoise3D(in vec3 pos, in float size) {
     return mix(r1, r2, f.z)*2.0-1.0;
 }
 
+float cubesSmooth(float x) {
+    return (x*x) * (3.0-2.0*x);
+}
+
 float shapedclouds(in vec3 pos) {
     const float size    = 0.001;     //an overall size constant can be conveniant
     float tick      = frameTimeCounter*0.1;     //for animation
@@ -57,10 +61,11 @@ float shapedclouds(in vec3 pos) {
 
     //sample noise in an fbm-like fashion for the cloud shape
     #if CloudStyle == 0
-    float shape     = Nnoise2D(noiseCoord+wind.xz, 0.5*size);
-        shape      += Nnoise2D(noiseCoord+wind.xz, 2.0*size)*0.25;
+    float shape     = Nnoise2D(coord+wind.xz, 0.5*size);
+        shape      += Nnoise2D(coord+wind.xz, 2.0*size)*0.25;
         shape      += Nnoise2D(coord+wind.xz, 4.0*size)*0.125;
         shape      += Nnoise2D(coord+wind.xz, 8.0*size)*0.0625;
+        shape      += Nnoise2D(coord+wind.xz, 16.0*size)*0.00625;
     #endif
 
     #if CloudStyle == 1
@@ -70,10 +75,12 @@ float shapedclouds(in vec3 pos) {
         shape      += Nnoise3D(pos+wind, 8.0*size)*0.0025;
     #endif
 
-        shape      -= 0.0;  //use this for manual coverage adjustment
+        shape      += (1.05*rainStrength + 0.05*rainStrength);  //use this for manual coverage adjustment
 
         shape      *= lowerFade;
         shape      *= higherFade;
+
+    shape   = cubesSmooth(shape);  
 
     return max(shape, 0.0);     //because negative density values are not allowed
 }
@@ -130,7 +137,16 @@ void clouds_2D(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 su
         cloud              += oD;
     }
 
-    vec3 color      = mix(skylight, sunlight, scatter);
+    vec3 DarkSkylight = vec3(0.2, 0.5, 1.0)*0.15;
+    vec3 DarkerSkylight = vec3(0.1, 0.5, 1.0)*0.15;
+    vec3 BrightSkylight = vec3(0.2, 0.5, 0.9) * 0.9;
+    vec3 BrightSunlight = vec3(1.0, 0.92, 0.9);
+    vec3 Yellowlight = vec3(1.0, 0.36, 0.08);
+    vec3 DarkSunlight = vec3(0.8, 0.8, 0.9) * 0.05;
+    vec3 sunlight2 = vec3(TimeSunrise*Yellowlight + TimeNoon*BrightSunlight + TimeSunset*Yellowlight + TimeMidnight*DarkSunlight);
+    vec3 skylight2 = vec3(TimeSunrise*DarkSkylight + TimeNoon*DarkSkylight + TimeSunset*DarkSkylight + TimeMidnight*DarkerSkylight);
+
+    vec3 color      = mix(skylight2, sunlight2, scatter);
     cloud           = clamp(cloud, 0.0, 1.0);
 
     //mix clouds with scene color
@@ -173,7 +189,7 @@ void clouds2D2(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 su
     sceneColor      = mix(sceneColor, color, cloud);
 }
 
-void pasted2DClouds(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
+float pasted2DCloud(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
     height = altitude;
     clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
     height = altitude + 10.0;
@@ -193,5 +209,12 @@ void pasted2DClouds(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in ve
     height = altitude + 450.0;
     clouds2D2(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
 
+    return 1.0;
+
+}
+
+void pasted2DClouds(in vec3 worldPos, in vec3 cameraPos, in vec3 lightVec, in vec3 sunlight, in vec3 skylight, bool isTerrain, in float height, inout vec3 sceneColor) {
+    height /= altitude/pasted2DCloud(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor);
+    pasted2DCloud(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor)*pasted2DCloud(worldPos, cameraPos, lightVec, sunlight, skylight, isTerrain, height, sceneColor)+length(height);
 
 }
